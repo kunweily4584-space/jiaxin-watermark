@@ -139,6 +139,14 @@ details.card.setp{margin-top:10px;padding:0}
   #tbar{grid-column:1;grid-row:3}
   #edTools{grid-column:2;grid-row:2/4;flex-direction:row;align-content:flex-start;overflow-y:auto}
 }
+.rmd{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.rmd.show{display:flex}
+.rmc{background:#fff;border-radius:18px;padding:20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.rmc b{font-size:18px;color:#a35a00}
+.rmc p{margin:0 0 4px;color:#555;font-size:15px}
+.rmc .btn{padding:13px;font-size:16px}
+.rmc .rmx{border:0;background:none;color:#888;font-weight:500}
+.qbar .btn{white-space:nowrap}
 .addc{color:var(--mute);border-style:dashed!important}
 .addbox{display:flex;gap:4px;flex:0 0 auto}
 .addbox input{width:7em;font-size:14px;padding:5px 8px;border:1px solid var(--c);border-radius:999px;font-family:inherit}
@@ -277,7 +285,7 @@ window.addEventListener('unhandledrejection',function(e){var x=e.reason;__showEr
   <div class="strip" id="strip"></div>
   <div class="prev" id="prev"><div class="empty">按「拍照」會開啟手機原相機<br>或用「相簿多選」一次匯入現場拍好的照片</div></div>
   <div class="warn" id="warn"></div>
-  <div class="qbar" id="qbar"><button class="btn pri" id="qSave">💾 儲存這張</button><label class="btn" id="qSame">📸 同缺失再拍<input id="cam2" type="file" accept="image/*" capture="environment"></label></div>
+  <div class="qbar" id="qbar"><label class="btn" id="qNew">📷 拍新的<input id="cam3" type="file" accept="image/*" capture="environment"></label><button class="btn pri" id="qSave">💾 儲存</button><label class="btn" id="qSame">📸 同缺失<input id="cam2" type="file" accept="image/*" capture="environment"></label></div>
   <button class="btn annoB" id="annoB" style="display:none">✏ 標註缺失（框選・箭頭・文字）</button>
   <div class="off" id="offw"><span>裁切位置</span><input type="range" id="off" min="0" max="100" value="50"></div>
   <details class="card setp" id="setc"><summary><span>⚙ 水印設定</span><small id="setSum"></small></summary>
@@ -324,12 +332,14 @@ window.addEventListener('unhandledrejection',function(e){var x=e.reason;__showEr
 <div class="tip" id="outTip"></div>
 <div class="ls" id="outL"></div><div class="ft"><button id="outBack">← 返回拍照</button></div></div>
 <div class="snk" id="snk"><span></span><button></button></div>
+<div class="rmd" id="rmd"><div class="rmc"><b>⚠ 上一張還沒儲存</b><p>要先儲存再拍下一張嗎？</p>
+  <button class="btn pri" id="rmSave">💾 儲存後拍照</button><button class="btn" id="rmGo">直接拍</button><button class="btn rmx" id="rmX">取消</button></div></div>
 <div class="toast" id="toast"></div>
 <div class="mask" id="mask"><span id="maskT">處理中…</span></div>
 
 <script>
 if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){r=Math.min(r,w/2,h/2);this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this}}
-const APP_VER='2.5';
+const APP_VER='2.6';
 const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const LOGO_A="data:image/jpeg;base64,";
 const LOGO_B="data:image/jpeg;base64,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";
@@ -352,7 +362,7 @@ jx:{name:'家昕科技驗屋',short:'家昕',color:'#0a97c4',ratio:[3,4],ratioTx
 /* ---------- state ---------- */
 const LS=(()=>{try{const l=window.localStorage;l.setItem('__t','1');l.removeItem('__t');return l}catch(e){return null}})();
 const store={get(k,d){try{if(!LS)return d;const v=LS.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{if(LS)LS.setItem(k,JSON.stringify(v))}catch(e){}}};
-const DEF_SET={keepOrig:true,longEdge:2560,quality:0.88,scale:100,logo:100,opacity:0.87,labels:{},timeLabel:'拍攝時間'};
+const DEF_SET={remind:true,weight:'400',keepOrig:true,longEdge:2560,quality:0.88,scale:100,logo:100,opacity:0.87,labels:{},timeLabel:'拍攝時間'};
 let S=store.get('wm_state_jx',null)||{tpl:'jx',set:{},chips:{},recent:{},last:{},seq:{}};
 for(const t in TPL){S.set[t]=Object.assign({},DEF_SET,S.set[t]||{});S.chips[t]=S.chips[t]||JSON.parse(JSON.stringify(TPL[t].chips));S.recent[t]=S.recent[t]||{};S.last[t]=S.last[t]||{};S.seq[t]=S.seq[t]||0}
 /* 快選分組設定 */
@@ -496,7 +506,7 @@ function drawWM(x,W,H,p){
   const rows=[];
   for(const f of t.fields){if(f.title)continue;const v=(p.f[f.k]||'').trim();if(v)rows.push([lab(f),v,f.multi?3:2])}
   if(!t.noTime)rows.push([st.timeLabel,fmtT(p.time),1]);
-  x.font=`${fs}px ${FONT}`;x.textBaseline='middle';
+  const fw=st.weight||'400';x.font=`${fw} ${fs}px ${FONT}`;x.textBaseline='middle';
   const lw=Math.max(0,...rows.map(r=>x.measureText(r[0]+'：').width));
   const lines=rows.map(r=>wrap(x,r[1],bw-2*pd-lw,r[2]));
   const n=lines.reduce((s,l)=>s+l.length,0),bodyH=pd*1.4+n*lh,boxH=headH+bodyH;
@@ -519,7 +529,7 @@ function drawWM(x,W,H,p){
   else x.fillText(title,tx,Y+headH/2+u*0.15);
   x.restore();
   // rows
-  x.font=`${fs}px ${FONT}`;x.fillStyle='#1d1d1d';let yy=Y+headH+pd*0.7+lh/2;
+  x.font=`${fw} ${fs}px ${FONT}`;x.fillStyle='#1d1d1d';let yy=Y+headH+pd*0.7+lh/2;
   rows.forEach((r,i)=>{x.fillText(r[0]+'：',X+pd,yy);lines[i].forEach(l=>{x.fillText(l,X+pd+lw,yy);yy+=lh})});
 }
 
@@ -572,7 +582,8 @@ async function makeThumb(p){
 }
 $('qSave').onclick=()=>{const p=photos[cur];if(p&&!p.done)run([p])};
 $('cam2').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;const src=photos[cur];addFiles(fs,{fromCam:true,copy:src});if(ST().keepOrig&&!IOS)saveOrig(fs)};
-$('cam').addEventListener('click',fold);$('pick').addEventListener('click',fold);$('cam2').addEventListener('click',fold);
+$('cam').addEventListener('click',fold);$('cam3').addEventListener('click',fold);
+$('cam3').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;addFiles(fs,{fromCam:true});if(ST().keepOrig&&!IOS)saveOrig(fs)};$('pick').addEventListener('click',fold);$('cam2').addEventListener('click',fold);
 $('cam').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;addFiles(fs,{fromCam:true});if(ST().keepOrig&&!IOS)saveOrig(fs)};
 async function saveOrig(fs){
   for(const f of fs){
@@ -603,7 +614,7 @@ function drawStrip(){
     d.onclick=e=>{if(e.target.classList.contains('x')){photos.splice(i,1);DB.del(p.id);if(bmpCache.id===p.id)bmpCache={id:null,bmp:null};cur=Math.min(cur,photos.length-1);saveCur();drawAll();return}cur=i;saveCur();drawAll()};
     s.appendChild(d)});
   const has=photos.length>0;$('saveOne').disabled=!has;$('saveAll').disabled=!has;
-  {const p=photos[cur];$('qbar').classList.toggle('show',!!p);if(p){$('qSave').disabled=!!p.done;$('qSave').textContent=p.done?'✓ 已儲存':'💾 儲存這張'}}
+  {const p=photos[cur];$('qbar').classList.toggle('show',!!p);if(p){$('qSave').disabled=!!p.done;$('qSave').textContent=p.done?'✓ 已儲存':'💾 儲存'}}
   $('saveAll').textContent=photos.length>1?`全部輸出（${photos.length}）`:'全部輸出';
   $('prevB').disabled=cur<=0;$('nextB').disabled=cur>=photos.length-1;
 }
@@ -760,12 +771,16 @@ function drawSet(){
   <span>輸出比例</span><select id="sR">${[['','範本預設（'+T().ratioTxt+'）'],['16,9','橫式 16:9'],['4,3','橫式 4:3'],['3,4','直式 4:3'],['9,16','直式 16:9']].map(o=>`<option value="${o[0]}" ${(st.ratio?st.ratio.join(','):'')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
   <span>輸出長邊</span><select id="sL">${[1600,1920,2560,3200,4000].map(v=>`<option ${v==st.longEdge?'selected':''}>${v}</option>`).join('')}</select>
   <span>JPEG 品質 <b id="vQ">${st.quality}</b></span><input type="range" id="sQ" min="0.6" max="0.98" step="0.02" value="${st.quality}">`;
-  h=`<span>底色不透明 <b id="vO">${st.opacity}</b></span><input type="range" id="sO" min="0.4" max="1" step="0.01" value="${st.opacity}">`+h;
+  h=`<span>底色不透明 <b id="vO">${st.opacity}</b></span><input type="range" id="sO" min="0.4" max="1" step="0.01" value="${st.opacity}">
+  <span>水印字體粗細</span><select id="sW">${[['400','一般（目前）'],['500','中粗'],['700','粗']].map(o=>`<option value="${o[0]}" ${(st.weight||'400')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+  <span>拍照前提醒<br><small style="color:var(--mute)">上一張還沒儲存時</small></span><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="sRm" ${st.remind!==false?'checked':''} style="width:22px;height:22px">${st.remind!==false?'開':'關'}</label>`+h;
   let h2='';
   for(const f of T().fields)h2+=`<span>${esc(f.label)}</span><input data-k="${f.k}" value="${esc(lab(f))}">`;
   if(!T().noTime)h2+=`<span>拍攝時間</span><input id="sT" value="${esc(st.timeLabel)}">`;
   el.innerHTML=h;$('set2').innerHTML=h2;
   const [w,hh]=outSize(st.longEdge);
+  $('sW').onchange=e=>{st.weight=e.target.value;save();schedule()};
+  $('sRm').onchange=e=>{st.remind=e.target.checked;save();drawSet();toast(st.remind?'已開啟：拍照前會提醒未儲存的照片':'已關閉拍照前提醒')};
   $('sK').onchange=e=>{st.keepOrig=e.target.checked;save();drawSet();toast(st.keepOrig?'拍照後會同時存原圖':'已關閉存原圖')};
   $('sR').onchange=e=>{st.ratio=e.target.value?e.target.value.split(',').map(Number):null;save();schedule()};
   $('sL').onchange=e=>{st.longEdge=+e.target.value;save();toast(`輸出 ${outSize(st.longEdge).join('×')}`)};
@@ -791,7 +806,7 @@ function remember(p){
   for(const f of T().fields){const v=(p.f[f.k]||'').trim();if(!v)continue;const a=histOf(f.k),i=a.indexOf(v);if(i>=0)a.splice(i,1);a.unshift(v);if(a.length>100)a.length=100}
   save();
 }
-function outKey(p){const st=ST();return JSON.stringify([S.tpl,p.f,p.anno||[],p.off,+p.time,st.scale,st.logo,st.opacity,st.longEdge,st.quality,st.ratio||null,st.labels,st.timeLabel])}
+function outKey(p){const st=ST();return JSON.stringify([S.tpl,p.f,p.anno||[],p.off,+p.time,st.scale,st.logo,st.opacity,st.longEdge,st.quality,st.ratio||null,st.labels,st.timeLabel,st.weight])}
 async function renderBlob(p){const c=await render(p,ST().longEdge);const b=await new Promise(r=>c.toBlob(r,'image/jpeg',ST().quality));c.width=c.height=0;return b}
 let preT;
 function prerender(){clearTimeout(preT);preT=setTimeout(async()=>{const p=photos[cur];if(!p||BUSY)return;const k=outKey(p);if(p.cache&&p.cache.key===k)return;
@@ -860,6 +875,19 @@ function editFromOut(pid){const i=photos.findIndex(p=>p.id===pid);closeOut();if(
   setTimeout(()=>{try{$('prev').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}},50);toast('已解鎖，改完再按「儲存這張」')}
 $('outShare').onclick=()=>{const fl=OUT.map(f=>new File([f.blob],f.name,{type:f.blob.type||'image/jpeg'}));navigator.share({files:fl}).then(()=>toast('完成')).catch(e=>{if(e&&e.name!=='AbortError')toast('分享失敗，請改用長按圖片儲存')})};
 function loadZip(){return window.JSZip?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+/* 拍照前提醒 */
+let rmTarget=null,rmSkip=false;
+function needRemind(){const p=photos[cur];return ST().remind!==false&&p&&!p.done}
+function openCam(inp){rmSkip=true;try{inp.click()}finally{setTimeout(()=>rmSkip=false,0)}}
+['cam','cam3','cam2'].forEach(id=>$(id).addEventListener('click',e=>{if(rmSkip||!needRemind())return;e.preventDefault();e.stopImmediatePropagation();rmTarget=$(id);$('rmd').classList.add('show')},true));
+$('rmX').onclick=()=>{$('rmd').classList.remove('show');rmTarget=null};
+$('rmGo').onclick=()=>{$('rmd').classList.remove('show');if(rmTarget)openCam(rmTarget);rmTarget=null};
+$('rmSave').onclick=async()=>{$('rmd').classList.remove('show');const t=rmTarget;rmTarget=null;const p=photos[cur];if(!p)return;
+  let left=false;const onHide=()=>{left=true};document.addEventListener('visibilitychange',onHide,{once:true});window.addEventListener('blur',onHide,{once:true});
+  await run([p]);
+  if(!t)return;
+  openCam(t);
+  setTimeout(()=>{if(!left&&!document.hidden)snack('✓ 已儲存，請點這裡開相機','📷 開啟相機',()=>openCam(t))},900)};
 function toTop(){try{document.querySelector('.add').scrollIntoView({behavior:'smooth',block:'center'})}catch(e){window.scrollTo(0,0)}}
 let BUSY=false;
 async function run(list){fold();BUSY=true;try{await run2(list)}finally{BUSY=false}}
